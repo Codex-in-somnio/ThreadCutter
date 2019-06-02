@@ -55,7 +55,9 @@ public:
 	void setSampleEnabled(int n, bool en);
 
 private:
+	AudioProcessorEditor *editor;
 	Processor processor[2];
+	void setEditorValues();
 
 
 	//==============================================================================

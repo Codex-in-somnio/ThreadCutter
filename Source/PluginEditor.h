@@ -10,6 +10,9 @@ class ThreadCutterAudioProcessorEditor : public AudioProcessorEditor, private Sl
 {
 public:
 	ThreadCutterAudioProcessorEditor(ThreadCutterAudioProcessor&);
+	void setThresholdSliderValue(double value);
+	void setEnabledCheckboxChecked(int n, bool checked);
+	
 	~ThreadCutterAudioProcessorEditor();
 
 	//==============================================================================
@@ -24,8 +27,7 @@ private:
 	// access the processor object that created it.
 	ThreadCutterAudioProcessor& processor;
 
-	double a = 0.5;
-	ProgressBar test;
+	ProgressBar matchScoreDisplay;
 	Slider mfccScoreOffsetSlider;
 	Slider mfccScoreScaleSlider;
 	Slider thresholdSlider;

@@ -23,6 +23,8 @@ public:
 	void setGetMuteTimeFrom(Processor *p);
 	std::string dumpCurrentState();
 	void loadState(std::string jsonText);
+	double getThreshold();
+	bool getSampleEnabled(int n);
 
 private:
 	std::vector<double> buffer;
@@ -43,7 +45,7 @@ private:
 
 	double mfccScoreOffset;
 	double mfccScoreScale;
-	double threshold;
+	double threshold = 0.5;
 
 
 };

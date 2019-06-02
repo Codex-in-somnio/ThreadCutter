@@ -199,6 +199,16 @@ void Processor::loadState(std::string jsonText)
 
 }
 
+double Processor::getThreshold()
+{
+	return threshold;
+}
+
+bool Processor::getSampleEnabled(int n)
+{
+	return sampleEnabled[n];
+}
+
 void Processor::doCaptureSample(int n)
 {
 	capturingSample = true;

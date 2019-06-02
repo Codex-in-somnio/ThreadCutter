@@ -176,7 +176,9 @@ bool ThreadCutterAudioProcessor::hasEditor() const
 
 AudioProcessorEditor* ThreadCutterAudioProcessor::createEditor()
 {
-	return new ThreadCutterAudioProcessorEditor(*this);
+	editor = new ThreadCutterAudioProcessorEditor(*this);
+	setEditorValues();
+	return editor;
 }
 
 //==============================================================================
@@ -195,6 +197,8 @@ void ThreadCutterAudioProcessor::setStateInformation(const void* data, int sizeI
 	// whose contents will have been created by the getStateInformation() call.
 	std::string state = (char *)data;
 	processor[0].loadState(state);
+	if (editor != nullptr)
+		setEditorValues();
 }
 
 void ThreadCutterAudioProcessor::setMfccScoreOffset(double value)
@@ -220,6 +224,14 @@ void ThreadCutterAudioProcessor::doCaptureSample(int n)
 void ThreadCutterAudioProcessor::setSampleEnabled(int n, bool en)
 {
 	processor[0].setSampleEnabled(n, en);
+}
+
+void ThreadCutterAudioProcessor::setEditorValues()
+{
+	ThreadCutterAudioProcessorEditor *_editor = (ThreadCutterAudioProcessorEditor *)editor;
+	_editor->setThresholdSliderValue(processor[0].getThreshold());
+	for (int i = 0; i < 3; ++i)
+		_editor->setEnabledCheckboxChecked(i, processor[0].getSampleEnabled(i));
 }
 
 //==============================================================================

@@ -3,14 +3,14 @@
 
 //==============================================================================
 ThreadCutterAudioProcessorEditor::ThreadCutterAudioProcessorEditor(ThreadCutterAudioProcessor& p)
-	: AudioProcessorEditor(&p), processor(p), test(p.currentMfccScoreDisplay)
+	: AudioProcessorEditor(&p), processor(p), matchScoreDisplay(p.currentMfccScoreDisplay)
 {
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
 	setSize(400, 235);
 
 
-	this->addAndMakeVisible(&test);
+	this->addAndMakeVisible(&matchScoreDisplay);
 
 	thresholdSlider.setSliderStyle(Slider::LinearHorizontal);
 	thresholdSlider.setRange(0.0, 1.0, 0.01);
@@ -43,6 +43,16 @@ ThreadCutterAudioProcessorEditor::ThreadCutterAudioProcessorEditor(ThreadCutterA
 
 }
 
+void ThreadCutterAudioProcessorEditor::setThresholdSliderValue(double value)
+{
+	thresholdSlider.setValue(value);
+}
+
+void ThreadCutterAudioProcessorEditor::setEnabledCheckboxChecked(int n, bool checked)
+{
+	enableSampleButton[n].setToggleState(checked, false);
+}
+
 ThreadCutterAudioProcessorEditor::~ThreadCutterAudioProcessorEditor()
 {
 }
@@ -64,7 +74,7 @@ void ThreadCutterAudioProcessorEditor::resized()
 	// This is generally where you'll want to lay out the positions of any
 	// subcomponents in your editor..
 	thresholdSlider.setBounds(50, 60, 300, 30);
-	test.setBounds(50, 30, 300, 30);
+	matchScoreDisplay.setBounds(50, 30, 300, 30);
 	for (int i = 0; i < 3; ++i)
 	{
 		doSampleButton[i].setBounds(60 + i * 100, 100, 80, 30);
@@ -105,7 +115,7 @@ void ThreadCutterAudioProcessorEditor::buttonClicked(Button * button)
 		if (fc->browseForFileToSave(true))
 		{
 			auto file = fc->getResult();
-			file.appendText(mb.toString());
+			file.replaceWithText(mb.toString());
 		}
 		delete fc;
 	}
@@ -117,8 +127,8 @@ void ThreadCutterAudioProcessorEditor::buttonClicked(Button * button)
 			auto file = fc->getResult();
 			StringArray content;
 			file.readLines(content);
-			auto contentStr = content.joinIntoString("\n").toRawUTF8();
-			processor.setStateInformation(contentStr, sizeof(contentStr));
+			auto contentStr = content.joinIntoString("\n").toStdString();
+			processor.setStateInformation(contentStr.c_str(), contentStr.length() + 1);
 		}
 		else
 		{

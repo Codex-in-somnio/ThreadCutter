@@ -26,6 +26,15 @@ Processor::~Processor()
 {
 }
 
+double Processor::getAgcGained(double sample)
+{
+	double gained = sample * agcGain;
+	double _agcSpeed = agcSpeed / frameSize;
+	if (std::abs(gained) > 1) agcGain -= agcSpeed;
+	else agcGain += _agcSpeed;
+	return gained;
+}
+
 void Processor::addSamples(std::vector<double> samples)
 {
 	for (int i = 0; i < samples.size(); ++i)
@@ -197,6 +206,8 @@ void Processor::loadState(std::string jsonText)
 
 	threshold = jsonObj["threshold"].get<double>();
 
+	reload();
+
 }
 
 double Processor::getThreshold()
@@ -221,12 +232,13 @@ bool Processor::process()
 	for (int i = 0; i < frameSize; ++i)
 	{
 		uint16_t ptr = bufferPtr - frameSize + i;
-		frame[i] = buffer[ptr];
+		frame[i] = getAgcGained(buffer[ptr]);
 	}
 
 	if (capturingSample)
 	{
 		SoundDetector::getSpectrum(frame);
+		SoundDetector::normalize(frame);
 		sampleSpectrum[capturingSampleId] = frame;
 		capturingSample = false;
 		reload();
@@ -239,13 +251,13 @@ bool Processor::process()
 		if (sampleEnabled[i])
 		{
 			double distance = detectors[i].process(frame);
-			mfccScore = std::max((1 - distance - 0.35) * 3, mfccScore);
+			mfccScore = std::max((1 - distance - 0.48) * 10, mfccScore);
 		}
 	}
-	currentMfccScore = std::min(mfccScore, 1.);
+	currentMfccScore = std::max(std::min(mfccScore, 1.), 0.);
 
-	//OutputDebugString(std::to_string(currentMfccScore).c_str());
-	//OutputDebugString("\n");
+	OutputDebugString(std::to_string(currentMfccScore).c_str());
+	OutputDebugString("\n");
 
 	bool result = currentMfccScore > threshold;
 

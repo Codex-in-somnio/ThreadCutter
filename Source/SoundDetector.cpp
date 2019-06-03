@@ -101,6 +101,23 @@ void SoundDetector::getSpectrum(std::vector<double>& frame)
 	}
 }
 
+void SoundDetector::normalize(std::vector<double>& frame)
+{
+	double sum = 0;
+	for (int i = 0; i < frame.size(); ++i)
+	{
+		sum += frame[i];
+	}
+	if (sum != 0)
+	{
+		sum /= frame.size();
+		for (int i = 0; i < frame.size(); ++i)
+		{
+			frame[i] /= sum;
+		}
+	}
+}
+
 void SoundDetector::_process(std::vector<double> frame)
 {
 	getSpectrum(frame);
@@ -122,7 +139,7 @@ void SoundDetector::_process(std::vector<double> frame)
 
 	int scaled_size = std::min((int)(ratio * 300), (int)frame.size() / 2);
 
-	if (ratio > 2 || ratio < 0.5) scaled_size = 0;
+	if (ratio > 2 || ratio < 0.5 || !std::isfinite(ratio)) scaled_size = 0;
 
 	std::vector<double> scaled_sample_spectrum(scaled_size);
 
@@ -144,7 +161,7 @@ void SoundDetector::_process(std::vector<double> frame)
 		sum_ += pow(frame[i], 2) * pow(scaled_sample_spectrum[i], 2) / std::pow(scaled_size, 4);
 	}
 
-	calculatedDistance = distance - sum_ / 5;
+	calculatedDistance = distance - sum_ / 3;
 }
 
 double SoundDetector::process(std::vector<double> frame)

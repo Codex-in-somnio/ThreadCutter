@@ -42,11 +42,13 @@ private:
 	bool capturingSample = false;
 	int capturingSampleId;
 	Processor *getMuteTimeFrom;
+	double getAgcGained(double sample);
 
 	double mfccScoreOffset;
 	double mfccScoreScale;
 	double threshold = 0.5;
-
+	double agcSpeed = 0.2;
+	double agcGain = 1;
 
 };
 

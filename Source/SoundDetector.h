@@ -15,6 +15,7 @@ public:
 	~SoundDetector();
 
 	static void getSpectrum(std::vector<double>& frame);
+	static void normalize(std::vector<double>& frame);
 
 private:
 	void _process(std::vector<double> frame);

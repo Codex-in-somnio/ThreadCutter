@@ -31,6 +31,7 @@ private:
 	Slider mfccScoreOffsetSlider;
 	Slider mfccScoreScaleSlider;
 	Slider thresholdSlider;
+	Slider agcSpeedSlider;
 	TextButton doSampleButton[3];
 	ToggleButton enableSampleButton[3];
 

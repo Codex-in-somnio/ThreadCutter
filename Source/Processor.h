@@ -16,6 +16,7 @@ public:
 	void setMfccScoreOffset(double value);
 	void setMfccScoreScale(double value);
 	void setMfccScoreThreshold(double value);
+	void setAgcSpeed(double value);
 	void reload();
 	void doCaptureSample(int n);
 	void setSampleEnabled(int n, bool en);
@@ -49,6 +50,7 @@ private:
 	double threshold = 0.5;
 	double agcSpeed = 0.2;
 	double agcGain = 1;
+	double agcMaxGain = 100.;
 
 };
 

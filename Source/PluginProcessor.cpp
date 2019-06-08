@@ -216,6 +216,11 @@ void ThreadCutterAudioProcessor::setMfccScoreThreshold(double value)
 	processor[0].setMfccScoreThreshold(value);
 }
 
+void ThreadCutterAudioProcessor::setAgcSpeed(double value)
+{
+	processor[0].setAgcSpeed(value);
+}
+
 void ThreadCutterAudioProcessor::doCaptureSample(int n)
 {
 	processor[0].doCaptureSample(n);

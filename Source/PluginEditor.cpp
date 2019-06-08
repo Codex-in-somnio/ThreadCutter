@@ -7,7 +7,7 @@ ThreadCutterAudioProcessorEditor::ThreadCutterAudioProcessorEditor(ThreadCutterA
 {
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
-	setSize(400, 235);
+	setSize(400, 265);
 
 
 	this->addAndMakeVisible(&matchScoreDisplay);
@@ -20,6 +20,15 @@ ThreadCutterAudioProcessorEditor::ThreadCutterAudioProcessorEditor(ThreadCutterA
 	thresholdSlider.setTextValueSuffix("(Threshold)");
 	thresholdSlider.addListener(this);
 	addAndMakeVisible(&thresholdSlider);
+
+	agcSpeedSlider.setSliderStyle(Slider::LinearHorizontal);
+	agcSpeedSlider.setRange(0.0, 0.3, 0.01);
+	agcSpeedSlider.setTextBoxStyle(Slider::NoTextBox, false, 90, 16);
+	agcSpeedSlider.setPopupDisplayEnabled(true, false, this);
+	agcSpeedSlider.setValue(0.15);
+	agcSpeedSlider.setTextValueSuffix("(AGC Speed)");
+	agcSpeedSlider.addListener(this);
+	addAndMakeVisible(&agcSpeedSlider);
 
 	for (int i = 0; i < 3; ++i)
 	{
@@ -74,22 +83,29 @@ void ThreadCutterAudioProcessorEditor::resized()
 	// This is generally where you'll want to lay out the positions of any
 	// subcomponents in your editor..
 	thresholdSlider.setBounds(50, 60, 300, 30);
-	matchScoreDisplay.setBounds(50, 30, 300, 30);
+	matchScoreDisplay.setBounds(50, 30, 300, 30); 
 	for (int i = 0; i < 3; ++i)
 	{
-		doSampleButton[i].setBounds(60 + i * 100, 100, 80, 30);
-		enableSampleButton[i].setBounds(60 + i * 100, 130, 80, 30);
+		doSampleButton[i].setBounds(60 + i * 100, 130, 80, 30);
+		enableSampleButton[i].setBounds(60 + i * 100, 160, 80, 30);
 	}
 
-	saveToFile.setBounds(80, 180, 110, 30);
-	loadFromFile.setBounds(210, 180, 110, 30);
+	saveToFile.setBounds(80, 210, 110, 30);
+	loadFromFile.setBounds(210, 210, 110, 30);
+
+	agcSpeedSlider.setBounds(50, 90, 300, 30);
 }
 
 void ThreadCutterAudioProcessorEditor::sliderValueChanged(Slider * slider)
 {
-	processor.setMfccScoreOffset(mfccScoreOffsetSlider.getValue());
-	processor.setMfccScoreScale(mfccScoreScaleSlider.getValue());
-	processor.setMfccScoreThreshold(thresholdSlider.getValue());
+	if (slider == &agcSpeedSlider)
+	{
+		processor.setAgcSpeed(agcSpeedSlider.getValue());
+	}
+	else if (slider == &thresholdSlider)
+	{
+		processor.setMfccScoreThreshold(thresholdSlider.getValue());
+	}
 }
 
 void ThreadCutterAudioProcessorEditor::buttonClicked(Button * button)

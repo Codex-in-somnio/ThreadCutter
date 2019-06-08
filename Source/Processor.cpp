@@ -31,7 +31,7 @@ double Processor::getAgcGained(double sample)
 	double gained = sample * agcGain;
 	double _agcSpeed = agcSpeed / frameSize;
 	if (std::abs(gained) > 1) agcGain -= agcSpeed;
-	else agcGain += _agcSpeed;
+	else if (agcMaxGain > agcGain) agcGain += _agcSpeed;
 	return gained;
 }
 
@@ -106,6 +106,11 @@ void Processor::setMfccScoreScale(double value)
 void Processor::setMfccScoreThreshold(double value)
 {
 	threshold = value;
+}
+
+void Processor::setAgcSpeed(double value)
+{
+	agcSpeed = value;
 }
 
 void Processor::reload()

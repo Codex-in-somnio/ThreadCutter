@@ -51,6 +51,7 @@ public:
 	void setMfccScoreOffset(double value);
 	void setMfccScoreScale(double value);
 	void setMfccScoreThreshold(double value);
+	void setAgcSpeed(double value);
 	void doCaptureSample(int n);
 	void setSampleEnabled(int n, bool en);
 

@@ -1,17 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="jsuxd9" name="ThreadCutter" projectType="audioplug" jucerVersion="5.4.3"
-              pluginFormats="buildVST,buildVST3" companyName="yyy">
+              pluginFormats="buildStandalone,buildVST,buildVST3" companyName="yyy"
+              pluginVST3Category="Tools">
   <MAINGROUP id="hVaJZH" name="ThreadCutter">
     <GROUP id="{8A87900A-B46E-603F-E574-517F53077FFE}" name="ExternalCode">
-      <FILE id="bcU5rz" name="FftRealPair.cpp" compile="1" resource="0" file="ExternalCode/FftRealPair.cpp"/>
-      <FILE id="UaZCsh" name="FftRealPair.hpp" compile="0" resource="0" file="ExternalCode/FftRealPair.hpp"/>
-      <FILE id="kqUtmU" name="picojson.h" compile="0" resource="0" file="ExternalCode/picojson.h"/>
-      <FILE id="Sa0cpl" name="spline.h" compile="0" resource="0" file="ExternalCode/spline.h"/>
-      <FILE id="NYRAiy" name="FastDctFft.cpp" compile="1" resource="0" file="ExternalCode/FastDctFft.cpp"/>
-      <FILE id="P2mPjg" name="FastDctFft.hpp" compile="0" resource="0" file="ExternalCode/FastDctFft.hpp"/>
-      <FILE id="pi0qcS" name="FftComplex.cpp" compile="1" resource="0" file="ExternalCode/FftComplex.cpp"/>
-      <FILE id="B2VOwk" name="FftComplex.hpp" compile="0" resource="0" file="ExternalCode/FftComplex.hpp"/>
+      <GROUP id="{E6BE38E1-D647-E965-FC8F-4D2FB2569850}" name="tools">
+        <FILE id="fYRDBB" name="kiss_fft.c" compile="1" resource="0" file="ExternalCode/c_speech_features/kiss_fft130/kiss_fft.c"/>
+        <FILE id="swKT97" name="kiss_fft.h" compile="0" resource="0" file="ExternalCode/c_speech_features/kiss_fft130/kiss_fft.h"/>
+        <FILE id="rqlQ4c" name="kiss_fftr.c" compile="1" resource="0" file="ExternalCode/c_speech_features/kiss_fft130/tools/kiss_fftr.c"/>
+        <FILE id="HxKfFo" name="kiss_fftr.h" compile="0" resource="0" file="ExternalCode/c_speech_features/kiss_fft130/tools/kiss_fftr.h"/>
+      </GROUP>
+      <FILE id="ypXG0N" name="c_speech_features.c" compile="1" resource="0"
+            file="ExternalCode/c_speech_features/c_speech_features.c"/>
+      <FILE id="XV4H7h" name="c_speech_features.h" compile="0" resource="0"
+            file="ExternalCode/c_speech_features/c_speech_features.h"/>
+      <FILE id="okK2QW" name="c_speech_features_config.h" compile="0" resource="0"
+            file="ExternalCode/c_speech_features/c_speech_features_config.h"/>
+      <FILE id="igDdN1" name="_kiss_fft_guts.h" compile="0" resource="0"
+            file="ExternalCode/c_speech_features/kiss_fft130/_kiss_fft_guts.h"/>
+      <FILE id="JbCGh2" name="svm.cpp" compile="1" resource="0" file="ExternalCode/libsvm/svm.cpp"/>
+      <FILE id="MdzVFY" name="svm.h" compile="0" resource="0" file="ExternalCode/libsvm/svm.h"/>
     </GROUP>
     <GROUP id="{C64D5F8C-16D0-49EC-E097-595B619E0AB9}" name="Source">
       <FILE id="n2XEuJ" name="PluginProcessor.cpp" compile="1" resource="0"

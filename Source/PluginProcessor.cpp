@@ -88,11 +88,15 @@ void ThreadCutterAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
 	// Use this method as the place to do any pre-playback
 	// initialisation that you need..
 
-	//processor[0].setFrameSize(4096);
+	int frameSize = (int)round(sampleRate * 0.25);
+	processor[0].setFrameSize(frameSize);
+	processor[1].setFrameSize(frameSize);
+	processor[0].getSoundDetector()->setSampRate((int)round(sampleRate));
+
 	processor[0].setDoDetection(true);
-	//processor[1].setFrameSize(4096);
-	setLatencySamples(4096 * 2);
 	processor[1].setGetMuteTimeFrom(&processor[0]);
+	
+	setLatencySamples(frameSize * 2);
 }
 
 void ThreadCutterAudioProcessor::releaseResources()
@@ -164,7 +168,12 @@ void ThreadCutterAudioProcessor::processBlock(AudioBuffer<float>& buffer, MidiBu
 		for (int i = 0; i < nSamples; ++i)
 			channelData[i] = (float)processedSamples[i];
 
-		if (channel == 0) currentMfccScoreDisplay = processor[channel].getCurrentMfccScore();
+		if (channel == 0)
+		{
+			currentMfccScoreDisplay = processor[channel].getCurrentMfccScore();
+			currentAvgPeakLevelDisplay = processor[channel].getCurrentAvgPeakLevel();
+			currentPeakLevelDisplay = processor[channel].getCurrentPeakLevel();
+		}
 	}
 }
 
@@ -201,42 +210,15 @@ void ThreadCutterAudioProcessor::setStateInformation(const void* data, int sizeI
 		setEditorValues();
 }
 
-void ThreadCutterAudioProcessor::setMfccScoreOffset(double value)
+Processor * ThreadCutterAudioProcessor::getMainAudioProcessor()
 {
-	processor[0].setMfccScoreOffset(value);
-}
-
-void ThreadCutterAudioProcessor::setMfccScoreScale(double value)
-{
-	processor[0].setMfccScoreScale(value);
-}
-
-void ThreadCutterAudioProcessor::setMfccScoreThreshold(double value)
-{
-	processor[0].setMfccScoreThreshold(value);
-}
-
-void ThreadCutterAudioProcessor::setAgcSpeed(double value)
-{
-	processor[0].setAgcSpeed(value);
-}
-
-void ThreadCutterAudioProcessor::doCaptureSample(int n)
-{
-	processor[0].doCaptureSample(n);
-}
-
-void ThreadCutterAudioProcessor::setSampleEnabled(int n, bool en)
-{
-	processor[0].setSampleEnabled(n, en);
+	return &processor[0];
 }
 
 void ThreadCutterAudioProcessor::setEditorValues()
 {
 	ThreadCutterAudioProcessorEditor *_editor = (ThreadCutterAudioProcessorEditor *)editor;
-	_editor->setThresholdSliderValue(processor[0].getThreshold());
-	for (int i = 0; i < 3; ++i)
-		_editor->setEnabledCheckboxChecked(i, processor[0].getSampleEnabled(i));
+//	_editor->setThresholdSliderValue(processor[0].getThreshold());
 }
 
 //==============================================================================

@@ -47,13 +47,10 @@ public:
 	void setStateInformation(const void* data, int sizeInBytes) override;
 
 	double currentMfccScoreDisplay;
+	double currentAvgPeakLevelDisplay;
+	double currentPeakLevelDisplay;
 
-	void setMfccScoreOffset(double value);
-	void setMfccScoreScale(double value);
-	void setMfccScoreThreshold(double value);
-	void setAgcSpeed(double value);
-	void doCaptureSample(int n);
-	void setSampleEnabled(int n, bool en);
+	Processor * getMainAudioProcessor();
 
 private:
 	AudioProcessorEditor *editor = nullptr;

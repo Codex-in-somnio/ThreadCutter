@@ -3,53 +3,56 @@
 
 //==============================================================================
 ThreadCutterAudioProcessorEditor::ThreadCutterAudioProcessorEditor(ThreadCutterAudioProcessor& p)
-	: AudioProcessorEditor(&p), processor(p), matchScoreDisplay(p.currentMfccScoreDisplay)
+	: AudioProcessorEditor(&p), processor(p), matchScoreDisplay(p.currentMfccScoreDisplay), avgLevelDisplay(p.currentAvgPeakLevelDisplay), peakLevelDisplay(p.currentPeakLevelDisplay)
 {
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
-	setSize(400, 265);
+	setSize(400, 330);
 
 
 	this->addAndMakeVisible(&matchScoreDisplay);
+	this->addAndMakeVisible(&avgLevelDisplay);
+	this->addAndMakeVisible(&peakLevelDisplay);
 
 	thresholdSlider.setSliderStyle(Slider::LinearHorizontal);
-	thresholdSlider.setRange(0.0, 1.0, 0.01);
+	thresholdSlider.setRange(-1.0, 1.0, 0.01);
 	thresholdSlider.setTextBoxStyle(Slider::NoTextBox, false, 90, 16);
 	thresholdSlider.setPopupDisplayEnabled(true, false, this);
-	thresholdSlider.setValue(0.5);
+	thresholdSlider.setValue(p.getMainAudioProcessor()->getThreshold());
 	thresholdSlider.setTextValueSuffix("(Threshold)");
 	thresholdSlider.addListener(this);
 	addAndMakeVisible(&thresholdSlider);
 
-	agcSpeedSlider.setSliderStyle(Slider::LinearHorizontal);
-	agcSpeedSlider.setRange(0.0, 0.3, 0.01);
-	agcSpeedSlider.setTextBoxStyle(Slider::NoTextBox, false, 90, 16);
-	agcSpeedSlider.setPopupDisplayEnabled(true, false, this);
-	agcSpeedSlider.setValue(0.15);
-	agcSpeedSlider.setTextValueSuffix("(AGC Speed)");
-	agcSpeedSlider.addListener(this);
-	addAndMakeVisible(&agcSpeedSlider);
+	gateSlider.setSliderStyle(Slider::LinearHorizontal);
+	gateSlider.setRange(0.0, 1.0, 0.01);
+	gateSlider.setTextBoxStyle(Slider::NoTextBox, false, 90, 16);
+	gateSlider.setPopupDisplayEnabled(true, false, this);
+	gateSlider.setValue(p.getMainAudioProcessor()->getThreshold());
+	gateSlider.setTextValueSuffix("");
+	gateSlider.addListener(this);
+	addAndMakeVisible(&gateSlider);
 
-	for (int i = 0; i < 3; ++i)
-	{
-		doSampleButton[i].setButtonText("Capture sample " + std::to_string(i + 1));
-		addAndMakeVisible(doSampleButton[i]);
-		doSampleButton[i].addListener(this);
+	gateSliderLabel.setText("Gate", NotificationType::dontSendNotification);
+	svmLabel.setText("Detection", NotificationType::dontSendNotification);
+	addAndMakeVisible(&gateSliderLabel);
+	addAndMakeVisible(&svmLabel);
 
-		enableSampleButton[i].setButtonText("Enabled");
-		addAndMakeVisible(enableSampleButton[i]);
-		enableSampleButton[i].setToggleState(false, false);
-		enableSampleButton[i].addListener(this);
-	}
 
-	saveToFile.setButtonText("Save to file");
+	doTrain.setButtonText("Train new model");
+	doTrain.addListener(this);
+	addAndMakeVisible(doTrain);
+
+	saveToFile.setButtonText("Save model to file");
 	saveToFile.addListener(this);
 	addAndMakeVisible(saveToFile);
 
-	loadFromFile.setButtonText("Load from file");
+	loadFromFile.setButtonText("Load model from file");
 	loadFromFile.addListener(this);
 	addAndMakeVisible(loadFromFile);
 
+	processor.getMainAudioProcessor()->getSoundDetector()->setDoTrainButton(&doTrain);
+	bool isTraining = processor.getMainAudioProcessor()->getSoundDetector()->getIsTraining();
+	if (isTraining) doTrain.setEnabled(false);
 }
 
 void ThreadCutterAudioProcessorEditor::setThresholdSliderValue(double value)
@@ -57,13 +60,9 @@ void ThreadCutterAudioProcessorEditor::setThresholdSliderValue(double value)
 	thresholdSlider.setValue(value);
 }
 
-void ThreadCutterAudioProcessorEditor::setEnabledCheckboxChecked(int n, bool checked)
-{
-	enableSampleButton[n].setToggleState(checked, false);
-}
-
 ThreadCutterAudioProcessorEditor::~ThreadCutterAudioProcessorEditor()
 {
+	processor.getMainAudioProcessor()->getSoundDetector()->setDoTrainButton(nullptr);
 }
 
 //==============================================================================
@@ -74,52 +73,77 @@ void ThreadCutterAudioProcessorEditor::paint(Graphics& g)
 
 	g.setColour(Colours::white);
 	g.setFont(15.0f);
-
-
 }
 
 void ThreadCutterAudioProcessorEditor::resized()
 {
 	// This is generally where you'll want to lay out the positions of any
 	// subcomponents in your editor..
-	thresholdSlider.setBounds(50, 60, 300, 30);
-	matchScoreDisplay.setBounds(50, 30, 300, 30); 
-	for (int i = 0; i < 3; ++i)
-	{
-		doSampleButton[i].setBounds(60 + i * 100, 130, 80, 30);
-		enableSampleButton[i].setBounds(60 + i * 100, 160, 80, 30);
-	}
 
-	saveToFile.setBounds(80, 210, 110, 30);
-	loadFromFile.setBounds(210, 210, 110, 30);
+	gateSliderLabel.setBounds(50, 20, 300, 30);
+	avgLevelDisplay.setBounds(50, 60, 300, 30);
+	peakLevelDisplay.setBounds(50, 100, 300, 30);
+	gateSlider.setBounds(50, 130, 300, 30);
 
-	agcSpeedSlider.setBounds(50, 90, 300, 30);
+	svmLabel.setBounds(50, 160, 300, 30);
+	matchScoreDisplay.setBounds(50, 200, 300, 30);
+	thresholdSlider.setBounds(50, 230, 300, 30);
+	doTrain.setBounds(60, 260, 80, 30);
+	saveToFile.setBounds(160, 260, 80, 30);
+	loadFromFile.setBounds(260, 260, 80, 30);
 }
 
 void ThreadCutterAudioProcessorEditor::sliderValueChanged(Slider * slider)
 {
-	if (slider == &agcSpeedSlider)
+	if (slider == &thresholdSlider)
 	{
-		processor.setAgcSpeed(agcSpeedSlider.getValue());
+		processor.getMainAudioProcessor()->setThreshold(thresholdSlider.getValue());
 	}
-	else if (slider == &thresholdSlider)
+	else if (slider == &gateSlider)
 	{
-		processor.setMfccScoreThreshold(thresholdSlider.getValue());
+		processor.getMainAudioProcessor()->setGateLevel(gateSlider.getValue());
 	}
 }
 
 void ThreadCutterAudioProcessorEditor::buttonClicked(Button * button)
 {
-	for (int i = 0; i < 3; ++i)
+	if (button == &doTrain)
 	{
-		if (button == &doSampleButton[i])
+		vector<string> ticsSampleFiles;
+		vector<string> nonTicsSampleFiles;
+
+		for (int i = 0; i < 2; ++i)
 		{
-			processor.doCaptureSample(i);
+			auto fc = new FileChooser(i == 0 ? "Select folder contains tics samples (must be WAV audio files)" : "Select folder contains non-tics samples (must be WAV audio files)", File::nonexistent, "*", false);
+			vector<string> *sampleFilesSet = i == 0 ? &ticsSampleFiles : &nonTicsSampleFiles;
+
+			if (fc->browseForDirectory())
+			{
+				auto dir = fc->getResult();
+				DirectoryIterator iter(dir, true, "*.wav");
+				while (iter.next())
+				{
+					string pathname = iter.getFile().getFullPathName().toStdString();
+					sampleFilesSet->push_back(pathname);
+				}
+				if (sampleFilesSet->empty())
+				{
+					NativeMessageBox::showMessageBox(AlertWindow::AlertIconType::NoIcon, "Error", "No WAV files found in this folder.");
+				}
+			}
+			else
+			{
+				NativeMessageBox::showMessageBox(AlertWindow::AlertIconType::NoIcon, "Error", "Failed to load file.");
+				delete fc;
+				return;
+			}
+			delete fc;
 		}
-		else if (button == &enableSampleButton[i])
-		{
-			processor.setSampleEnabled(i, enableSampleButton[i].getToggleState());
-		}
+
+		NativeMessageBox::showMessageBox(AlertWindow::AlertIconType::NoIcon, "Training start", "About to start training. It may take a while.");
+		
+		doTrain.setEnabled(false);
+		processor.getMainAudioProcessor()->getSoundDetector()->train(ticsSampleFiles, nonTicsSampleFiles);
 	}
 
 	if (button == &saveToFile)
@@ -127,24 +151,23 @@ void ThreadCutterAudioProcessorEditor::buttonClicked(Button * button)
 		MemoryBlock mb;
 		processor.getStateInformation(mb);
 
-		auto fc = new FileChooser("Save as", File::nonexistent, "*.json", true);
+		auto fc = new FileChooser("Save as", File::nonexistent, "*.model", true);
 		if (fc->browseForFileToSave(true))
 		{
 			auto file = fc->getResult();
-			file.replaceWithText(mb.toString());
+			string path = file.getFullPathName().toStdString();
+			processor.getMainAudioProcessor()->getSoundDetector()->saveModel(path.c_str());
 		}
 		delete fc;
 	}
 	else if (button == &loadFromFile)
 	{
-		auto fc = new FileChooser("Load from", File::nonexistent, "*.json", true);
+		auto fc = new FileChooser("Load from", File::nonexistent, "*.model", true);
 		if (fc->browseForFileToOpen())
 		{
 			auto file = fc->getResult();
-			StringArray content;
-			file.readLines(content);
-			auto contentStr = content.joinIntoString("\n").toStdString();
-			processor.setStateInformation(contentStr.c_str(), contentStr.length() + 1);
+			string path = file.getFullPathName().toStdString();
+			processor.getMainAudioProcessor()->getSoundDetector()->loadModel(path.c_str());
 		}
 		else
 		{

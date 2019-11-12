@@ -1,38 +1,16 @@
 #include "Processor.h"
-#include <windows.h>
 #include <string>
-#include "../ExternalCode/picojson.h"
 #include "../JuceLibraryCode/JuceHeader.h"
 
 Processor::Processor()
 {
 	buffer.resize(65536);
-	step = 2048;
-
-	frameSize = 4096;
-
-	sampleSpectrum.resize(3);
-	sampleEnabled.resize(3);
-	for (int i = 0; i < 3; ++i)
-	{
-		sampleSpectrum[i].resize(frameSize);
-		for (int j = 0; j < frameSize; ++j) sampleSpectrum[i][j] = 0;
-		sampleEnabled[i] = false;
-	}
+	step = 256;
 }
 
 
 Processor::~Processor()
 {
-}
-
-double Processor::getAgcGained(double sample)
-{
-	double gained = sample * agcGain;
-	double _agcSpeed = agcSpeed / frameSize;
-	if (std::abs(gained) > 1) agcGain -= agcSpeed;
-	else if (agcMaxGain > agcGain) agcGain += _agcSpeed;
-	return gained;
 }
 
 void Processor::addSamples(std::vector<double> samples)
@@ -77,6 +55,7 @@ std::vector<double> Processor::getSamples(int nSamples)
 void Processor::setFrameSize(int size)
 {
 	frameSize = size;
+	step = size / 2;
 }
 
 void Processor::setDoDetection(bool _doDetection)
@@ -88,48 +67,12 @@ void Processor::setDoDetection(bool _doDetection)
 	}
 }
 
-double Processor::getCurrentMfccScore()
-{
-	return currentMfccScore;
-}
-
-void Processor::setMfccScoreOffset(double value)
-{
-	mfccScoreOffset = value;
-}
-
-void Processor::setMfccScoreScale(double value)
-{
-	mfccScoreScale = value;
-}
-
-void Processor::setMfccScoreThreshold(double value)
-{
-	threshold = value;
-}
-
-void Processor::setAgcSpeed(double value)
-{
-	agcSpeed = value;
-}
-
 void Processor::reload()
 {
 	if (doDetection)
 	{
-		detectors.resize(sampleSpectrum.size());
-		for (int i = 0; i < detectors.size(); ++i)
-		{
-			std::vector<double> spect = sampleSpectrum[i];
-			SoundDetector sd(spect);
-			detectors[i] = sd;
-		}
+		
 	}
-}
-
-void Processor::setSampleEnabled(int n, bool en)
-{
-	sampleEnabled[n] = en;
 }
 
 double Processor::getMuteTime()
@@ -143,7 +86,7 @@ void Processor::setGetMuteTimeFrom(Processor *p)
 }
 
 std::string Processor::dumpCurrentState()
-{
+{/*
 	picojson::array _sampleSpect(sampleSpectrum.size());
 	for (int i = 0; i < sampleSpectrum.size(); ++i)
 	{
@@ -168,11 +111,13 @@ std::string Processor::dumpCurrentState()
 	jsonObj["threshold"] = picojson::value(threshold);
 
 	std::string ret = picojson::value(jsonObj).serialize();
-	return ret;
+	return ret;*/
+	return "";
 }
 
 void Processor::loadState(std::string jsonText)
 {
+	/*
 	if (jsonText.empty()) return;
 
 	picojson::value val;
@@ -212,6 +157,7 @@ void Processor::loadState(std::string jsonText)
 	threshold = jsonObj["threshold"].get<double>();
 
 	reload();
+	*/
 
 }
 
@@ -220,51 +166,60 @@ double Processor::getThreshold()
 	return threshold;
 }
 
-bool Processor::getSampleEnabled(int n)
+void Processor::setThreshold(double value)
 {
-	return sampleEnabled[n];
+	threshold = value;
 }
 
-void Processor::doCaptureSample(int n)
+void Processor::setGateLevel(double value)
 {
-	capturingSample = true;
-	capturingSampleId = n;
+	gateLevel = value;
+}
+
+SoundDetector * Processor::getSoundDetector()
+{
+	return &detector;
+}
+
+double Processor::getCurrentMfccScore()
+{
+	return (currentMfccScore + 1) / 2.;
+}
+
+double Processor::getCurrentAvgPeakLevel()
+{
+	return avgPeakLevel;
+}
+
+double Processor::getCurrentPeakLevel()
+{
+	return currentPeakLevel;
 }
 
 bool Processor::process()
 {
-	std::vector<double> frame(frameSize);
+	std::vector<float> frame(frameSize);
+	float peakLevel = 0.;
 	for (int i = 0; i < frameSize; ++i)
 	{
 		uint16_t ptr = bufferPtr - frameSize + i;
-		frame[i] = getAgcGained(buffer[ptr]);
+		frame[i] = buffer[ptr];
+		if (std::abs(frame[i]) > peakLevel)
+			peakLevel = std::abs(frame[i]);
 	}
 
-	if (capturingSample)
+	avgPeakLevel = avgPeakLevel * 0.95 + peakLevel * 0.05;
+
+	currentPeakLevel = std::min(peakLevel / avgPeakLevel / 4., 1.);
+
+	if (peakLevel == 0. || currentPeakLevel < gateLevel)
 	{
-		SoundDetector::getSpectrum(frame);
-		SoundDetector::normalize(frame);
-		sampleSpectrum[capturingSampleId] = frame;
-		capturingSample = false;
-		reload();
+		currentMfccScore = -2.;
 		return false;
 	}
 
-	double mfccScore = 0;
-	for (int i = 0; i < detectors.size(); ++i)
-	{
-		if (sampleEnabled[i])
-		{
-			double distance = detectors[i].process(frame);
-			mfccScore = std::max((1 - distance - 0.48) * 10, mfccScore);
-		}
-	}
-	currentMfccScore = std::max(std::min(mfccScore, 1.), 0.);
+	float result = detector.process(frame);
+	currentMfccScore = result;
 
-	OutputDebugString(std::to_string(currentMfccScore).c_str());
-	OutputDebugString("\n");
-
-	bool result = currentMfccScore > threshold;
-
-	return result;
+	return result > threshold;
 }

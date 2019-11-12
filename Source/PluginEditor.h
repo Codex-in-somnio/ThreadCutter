@@ -11,7 +11,6 @@ class ThreadCutterAudioProcessorEditor : public AudioProcessorEditor, private Sl
 public:
 	ThreadCutterAudioProcessorEditor(ThreadCutterAudioProcessor&);
 	void setThresholdSliderValue(double value);
-	void setEnabledCheckboxChecked(int n, bool checked);
 	
 	~ThreadCutterAudioProcessorEditor();
 
@@ -28,15 +27,17 @@ private:
 	ThreadCutterAudioProcessor& processor;
 
 	ProgressBar matchScoreDisplay;
-	Slider mfccScoreOffsetSlider;
-	Slider mfccScoreScaleSlider;
+	ProgressBar avgLevelDisplay;
+	ProgressBar peakLevelDisplay;
 	Slider thresholdSlider;
-	Slider agcSpeedSlider;
-	TextButton doSampleButton[3];
-	ToggleButton enableSampleButton[3];
+	Slider gateSlider;
+	TextButton doTrain;
 
 	TextButton saveToFile;
 	TextButton loadFromFile;
+
+	Label gateSliderLabel;
+	Label svmLabel;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ThreadCutterAudioProcessorEditor)
 };

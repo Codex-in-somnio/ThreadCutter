@@ -2,6 +2,9 @@
 
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="ThreadCutter\ExternalCode\tools">
+      <UniqueIdentifier>{433FBE27-4766-5AE2-FC02-5D2AD14AAA60}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ThreadCutter\ExternalCode">
       <UniqueIdentifier>{EF3C73B3-5FCB-A246-8C7B-05D3980A01C6}</UniqueIdentifier>
     </Filter>
@@ -151,6 +154,9 @@
     </Filter>
     <Filter Include="JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst">
       <UniqueIdentifier>{B90A44F3-B62D-B5C0-81A2-683D2650AEE6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x">
+      <UniqueIdentifier>{0723C856-9C0F-5AF7-81B2-1986BC1E09E3}</UniqueIdentifier>
     </Filter>
     <Filter Include="JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces">
       <UniqueIdentifier>{DAF30656-5915-0E45-C4E4-54439617D525}</UniqueIdentifier>
@@ -436,13 +442,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\ExternalCode\FftRealPair.cpp">
+    <ClCompile Include="..\..\ExternalCode\c_speech_features\kiss_fft130\kiss_fft.c">
+      <Filter>ThreadCutter\ExternalCode\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ExternalCode\c_speech_features\kiss_fft130\tools\kiss_fftr.c">
+      <Filter>ThreadCutter\ExternalCode\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ExternalCode\c_speech_features\c_speech_features.c">
       <Filter>ThreadCutter\ExternalCode</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\ExternalCode\FastDctFft.cpp">
-      <Filter>ThreadCutter\ExternalCode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ExternalCode\FftComplex.cpp">
+    <ClCompile Include="..\..\ExternalCode\libsvm\svm.cpp">
       <Filter>ThreadCutter\ExternalCode</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp">
@@ -2436,19 +2445,22 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\ExternalCode\FftRealPair.hpp">
+    <ClInclude Include="..\..\ExternalCode\c_speech_features\kiss_fft130\kiss_fft.h">
+      <Filter>ThreadCutter\ExternalCode\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ExternalCode\c_speech_features\kiss_fft130\tools\kiss_fftr.h">
+      <Filter>ThreadCutter\ExternalCode\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ExternalCode\c_speech_features\c_speech_features.h">
       <Filter>ThreadCutter\ExternalCode</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\ExternalCode\picojson.h">
+    <ClInclude Include="..\..\ExternalCode\c_speech_features\c_speech_features_config.h">
       <Filter>ThreadCutter\ExternalCode</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\ExternalCode\spline.h">
+    <ClInclude Include="..\..\ExternalCode\c_speech_features\kiss_fft130\_kiss_fft_guts.h">
       <Filter>ThreadCutter\ExternalCode</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\ExternalCode\FastDctFft.hpp">
-      <Filter>ThreadCutter\ExternalCode</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\ExternalCode\FftComplex.hpp">
+    <ClInclude Include="..\..\ExternalCode\libsvm\svm.h">
       <Filter>ThreadCutter\ExternalCode</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\PluginProcessor.h">
@@ -3221,6 +3233,15 @@
     </ClInclude>
     <ClInclude Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst\vsttypes.h">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x\aeffect.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x\aeffectx.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x\vstfxstore.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x</Filter>
     </ClInclude>
     <ClInclude Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\public.sdk\source\common\memorystream.h">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\public.sdk\source\common</Filter>
@@ -4669,6 +4690,9 @@
     </None>
     <None Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\base\LICENSE.txt">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\base</Filter>
+    </None>
+    <None Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x\readme.txt">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst2.x</Filter>
     </None>
     <None Include="..\..\JUCE\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\LICENSE.txt">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces</Filter>

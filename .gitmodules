@@ -1,3 +1,9 @@
 [submodule "JUCE"]
 	path = JUCE
 	url = https://github.com/WeAreROLI/JUCE
+[submodule "ExternalCode/libsvm"]
+	path = ExternalCode/libsvm
+	url = https://github.com/cjlin1/libsvm
+[submodule "ExternalCode/c_speech_features"]
+	path = ExternalCode/c_speech_features
+	url = https://github.com/Cwiiis/c_speech_features

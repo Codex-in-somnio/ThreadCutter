@@ -1,181 +1,284 @@
+#include <windows.h>
 #include "SoundDetector.h"
-#include "../ExternalCode/FftComplex.hpp"
-#include "../ExternalCode/FastDctFft.hpp"
 #include <complex>
 #include <algorithm>
+#include "../ExternalCode/c_speech_features/c_speech_features.h"
+#include <cassert>
+#include "../JuceLibraryCode/JuceHeader.h"
 
 #define M_PI 3.14159265358979323846
 
-int findMaxFromSpectrum(std::vector<double> spect)
-{
-	int max_pos = 0;
-	double max_ = 0;
-
-	for (int i = 0; i < spect.size() / 2; ++i)
-	{
-		if (max_ < spect[i])
-		{
-			max_ = spect[i];
-			max_pos = i;
-		}
-	}
-	return max_pos;
-}
-
 SoundDetector::SoundDetector()
 {
+	param.svm_type = C_SVC;
+	param.kernel_type = LINEAR;
+	param.degree = 3;
+	param.gamma = 0.0001;
+	param.coef0 = 0;
+	param.nu = 0.5;
+	param.cache_size = 100;
+	param.C = 10;
+	param.eps = 1e-3;
+	param.shrinking = 1;
+	param.probability = 0;
 }
 
-SoundDetector::SoundDetector(std::vector<double> _sampleSpectrum)
+vector<float> SoundDetector::spectrumToMfcc(vector<float> spect)
 {
-	sampleSpectrum = _sampleSpectrum;
-
-	SoundDetector::filter(sampleSpectrum);
-
-	sampleSpectMaxFreq = findMaxFromSpectrum(sampleSpectrum);
-
-	linearScale.resize(sampleSpectrum.size());
-
-	for (int i = 0; i < linearScale.size(); ++i)
-	{
-		linearScale[i] = i;
-	}
-
-	std::vector<double> samples(std::begin(sampleSpectrum), std::end(sampleSpectrum));
-	sampleSpectSpline.set_points(linearScale, samples);
-	sampleCepstrum = spectrumToMfcc(sampleSpectrum);
-}
-
-void SoundDetector::setFrameSize(int _frameSize)
-{
-	frameSize = _frameSize;
-	frameBuffer.resize(frameSize);
-}
-
-void SoundDetector::filter(std::vector<double>& spect)
-{
-	int _lowFreqBound = std::round(lowFreqBound / sampRate * spect.size());
-	int _highFreqBound = std::round(highFreqBound / sampRate * spect.size());
-	for (int i = 0; i < _lowFreqBound; ++i) spect[i] = 0, spect[spect.size() - 1 - i] = 0;
-	for (int i = _highFreqBound; i < spect.size() / 2; ++i) spect[i] = 0, spect[spect.size() - 1 - i] = 0;
-}
-
-std::vector<double> SoundDetector::spectrumToMfcc(std::vector<double> spect)
-{
-	tk::spline s;
-	s.set_points(linearScale, spect);
-
-	double scaler = spect.size() / std::log10(spect.size() / 700.);
-
-	double sum = 0;
-	for (int i = 0; i < spect.size() / 2; i++)
-	{
-		spect[i] = s(scaler * std::log10(i / 700.));
-		if (std::isnan(spect[i])) spect[i] = 0;
-		spect[spect.size() - 1 - i] = spect[i];
-		sum += spect[i];
-	}
-	for (int i = 0; i < spect.size(); i++)
-	{
-		spect[i] /= sum * 2 / spect.size();
-	}
-	FastDctFft::transform(spect);
 
 	return spect;
 }
 
-void SoundDetector::getSpectrum(std::vector<double>& frame)
+void SoundDetector::normalize(vector<float>& frame)
 {
-	std::vector<std::complex<double>> samples(frame.size());
-
-	for (int i = 0; i < frame.size(); i++)
-	{
-		samples[i] = 0.5 * (1 - cos(2 * M_PI * i / (double)(frame.size() - 1))) * frame[i];
-	}
-
-	Fft::transform(samples);
-
-	for (int i = 0; i < frame.size(); i++)
-	{
-		frame[i] = std::abs(samples[i]);
-	}
-}
-
-void SoundDetector::normalize(std::vector<double>& frame)
-{
-	double sum = 0;
+	float _max = 0;
 	for (int i = 0; i < frame.size(); ++i)
 	{
-		sum += frame[i];
+		_max = max(_max, abs(frame[i]));
 	}
-	if (sum != 0)
+	if (_max != 0)
 	{
-		sum /= frame.size();
 		for (int i = 0; i < frame.size(); ++i)
 		{
-			frame[i] /= sum;
+			frame[i] /= _max;
 		}
 	}
 }
 
-void SoundDetector::_process(std::vector<double> frame)
+void SoundDetector::setDoTrainButton(TextButton * btn)
 {
-	getSpectrum(frame);
-	SoundDetector::filter(frame);
-	std::vector<double> mfcc = spectrumToMfcc(frame);
+	doTrainButton = btn;
+}
 
-	double distance = 0;
-	for (int i = 0; i < frame.size(); i++)
+vector<svm_node> SoundDetector::getSvmNodes(vector<float> features)
+{
+	vector<svm_node> nodes(features.size() + 1);
+	for (int i = 0; i < features.size(); ++i)
 	{
-		distance += std::pow(mfcc[i] - sampleCepstrum[i], 2);
+		nodes[i].index = i + 1;
+		nodes[i].value = features[i];
 	}
-	distance = (std::pow(distance, 1. / frame.size()) - 1) * 100;
+	nodes[features.size()].index = -1;
+	return nodes;
+}
 
-	// ------------------
-
-	int maxFreq = findMaxFromSpectrum(frame);
-
-	double ratio = maxFreq / (double)sampleSpectMaxFreq;
-
-	int scaled_size = std::min((int)(ratio * 300), (int)frame.size() / 2);
-
-	if (ratio > 2 || ratio < 0.5 || !std::isfinite(ratio)) scaled_size = 0;
-
-	std::vector<double> scaled_sample_spectrum(scaled_size);
-
-	for (int i = 0; i < scaled_sample_spectrum.size(); ++i)
+vector<vector<svm_node>> SoundDetector::audioSamplesToNodes(vector<float> samples, int rate)
+{
+	normalize(samples);
+	vector<short> sFrame(samples.size());
+	for (int i = 0; i < samples.size(); ++i)
 	{
-		if (i * ratio >= frame.size() / 2)
+		sFrame[i] = (short)round(samples[i] * 32766);
+	}
+
+	csf_float* mfcc;
+
+	int nMfccFrames = csf_mfcc(
+		&sFrame[0],
+		samples.size(),
+		rate,
+		mfccWinLen,
+		mfccWinStep,
+		mfccNCep,
+		mfccNCep * 2,
+		8192,
+		100,
+		10000,
+		0.97,
+		22,
+		false,
+		NULL,
+		&mfcc
+	);
+
+	csf_float* logFBankFeatures;
+
+	int nLogFBankFrames = csf_logfbank(
+		&sFrame[0],
+		samples.size(),
+		sampRate,
+		mfccWinLen,
+		mfccWinStep,
+		nLogFilter,
+		8192,
+		100,
+		10000,
+		0.97,
+		NULL,
+		&logFBankFeatures,
+		NULL
+	);
+
+	int nFrames = min(nLogFBankFrames, nMfccFrames);
+
+	vector<vector<svm_node>> ret(nMfccFrames);
+
+	for (int i = 0; i < nFrames; ++i)
+	{
+		vector<float> features(nLogFilter + mfccNCep);
+		for (int j = 0; j < mfccNCep; ++j) features[j] = mfcc[i * mfccNCep + j];
+		for (int j = 0; j < nLogFilter; ++j) features[mfccNCep + j] = logFBankFeatures[i * nLogFilter + j];
+		vector<svm_node> nodes = getSvmNodes(features);
+		ret[i] = nodes;
+	}
+	delete[] mfcc;
+	delete[] logFBankFeatures;
+	return ret;
+}
+
+float SoundDetector::process(vector<float> frame)
+{
+	if (!model) return -2;
+	vector<vector<svm_node>> features = audioSamplesToNodes(frame, sampRate);
+	float ret = 0.f;
+	for (int i = 0; i < features.size(); ++i)
+	{
+		double test[2];
+		float result = svm_predict_probability(model, &features[i][0], test);
+		ret += result;
+		if (result > 0) OutputDebugString("!");
+		//OutputDebugString((to_string(test[0]) + " " + to_string(test[1]) + "\n").c_str());
+	}
+	ret /= features.size();
+	return ret;
+}
+
+void SoundDetector::addToTrainingSet(vector<float> samples, int rate, double label)
+{
+	vector<vector<svm_node>> features = audioSamplesToNodes(samples, rate);
+	for (int i = 0; i < features.size(); ++i)
+	{
+		trainingSet.push_back(features[i]);
+		trainingSetLabel.push_back(label);
+	}
+}
+
+void SoundDetector::resetTraningSet()
+{
+	trainingSet.resize(0);
+	trainingSetLabel.resize(0);
+	model = nullptr;
+}
+
+void SoundDetector::train(vector<string> symptomSet, vector<string> normalSet)
+{
+	if (isTraining) return;
+	trainingThread = new thread(&SoundDetector::doTrain, this, symptomSet, normalSet);
+}
+
+void SoundDetector::doTrain(vector<string> symptomSet, vector<string> normalSet)
+{
+	if (model) svm_free_model_content(model);
+	isTraining = true;
+	resetTraningSet();
+
+	AudioFormatManager formatManager;
+	formatManager.registerBasicFormats();
+	AudioFormat *audioFormat = formatManager.getDefaultFormat();
+
+	map<string, double> sampleFiles;
+	for (auto const& sampleFilePath : normalSet)
+		sampleFiles[sampleFilePath] = -1;
+	for (auto const& sampleFilePath : symptomSet)
+		sampleFiles[sampleFilePath] = 1;
+
+	for (auto const& sampleFile : sampleFiles)
+	{
+		OutputDebugString(("Preparing " + sampleFile.first + "\n").c_str());
+		MemoryMappedAudioFormatReader *reader = audioFormat->createMemoryMappedReader(File(sampleFile.first));
+		
+		int rate = reader->sampleRate;
+		int nChannels = reader->numChannels;
+		int length = reader->lengthInSamples;
+
+		int frameSize = rate / 2;
+		
+		for (int i = 0; i < length; i += frameSize)
 		{
-			scaled_size = i;
-			break;
+			vector<float> samples;
+			reader->mapSectionOfFile(Range<int64>(i, min(i + frameSize, length)));
+			for (int j = i; j < min(i + frameSize, length); ++j)
+			{
+				float *_samples = new float[nChannels];
+				reader->getSample(j, _samples);
+
+				float sample = 0.;
+				for (int k = 0; k < nChannels; ++k)
+					sample += _samples[k];
+				sample /= (float)nChannels;
+				delete _samples;
+
+				samples.push_back(sample);
+			}
+			addToTrainingSet(samples, rate, sampleFile.second);
 		}
-		scaled_sample_spectrum[i] = sampleSpectSpline(i * ratio);
-		//scaled_spectrum[i] = spectrum[i];
+
+		delete reader;
 	}
 
-	double sum_ = 0;
-
-	for (int i = 0; i < scaled_size; ++i)
+	int nSymptomSamples = 0;
+	int nNormalSamples = 0;
+	for (int i = 0; i < trainingSet.size(); ++i)
 	{
-		sum_ += pow(frame[i], 2) * pow(scaled_sample_spectrum[i], 2) / std::pow(scaled_size, 4);
+		if (trainingSetLabel[i] > 0) nSymptomSamples++;
+		else nNormalSamples++;
 	}
+	double symptomWeight = nNormalSamples / (double)trainingSet.size();
+	double normalWeight = nSymptomSamples / (double)trainingSet.size();
 
-	calculatedDistance = distance - sum_ / 3;
+	vector<int> weightLabel = {-1, 1};
+	vector<double> weight = {normalWeight, symptomWeight};
+	
+
+	param.nr_weight = 2;
+	param.weight_label = &weightLabel[0];
+	param.weight = &weight[0];
+
+	svm_problem prob;
+	prob.l = trainingSet.size();
+	prob.y = &trainingSetLabel[0];
+	prob.x = new svm_node*[trainingSet.size()];
+
+	for (int i = 0; i < trainingSet.size(); ++i)
+		prob.x[i] = &trainingSet[i][0];
+
+	OutputDebugString("Start traning\n");
+
+	model = svm_train(&prob, &param);
+	delete[] prob.x;
+
+	const MessageManagerLock mmLock;
+	if (doTrainButton) doTrainButton->setEnabled(true);
+	isTraining = false;
+	NativeMessageBox::showMessageBox(AlertWindow::AlertIconType::NoIcon, "Success", "Model successfully trained. You can use it now or save it to a file.");
 }
 
-double SoundDetector::process(std::vector<double> frame)
+void SoundDetector::saveModel(string path)
 {
-	if (worker != nullptr)
+	if (model->free_sv == 1)
 	{
-		worker->join();
-		delete worker;
+		NativeMessageBox::showMessageBox(AlertWindow::AlertIconType::NoIcon, "Error", "Cannot save externally loaded model.");
+		return;
 	}
+	svm_save_model(path.c_str(), model);
+}
 
-	worker = new std::thread(&SoundDetector::_process, this, frame);
-	return calculatedDistance;
+void SoundDetector::loadModel(string path)
+{
+	if (model) svm_free_model_content(model);
+	model = svm_load_model(path.c_str());
 }
 
 SoundDetector::~SoundDetector()
 {
+}
+
+void SoundDetector::setSampRate(int rate)
+{
+	sampRate = rate;
+}
+
+bool SoundDetector::getIsTraining()
+{
+	return isTraining;
 }

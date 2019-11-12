@@ -166,6 +166,11 @@ double Processor::getThreshold()
 	return threshold;
 }
 
+double Processor::getGateLevel()
+{
+	return gateLevel;
+}
+
 void Processor::setThreshold(double value)
 {
 	threshold = value;

@@ -18,6 +18,7 @@ public:
 	std::string dumpCurrentState();
 	void loadState(std::string jsonText);
 	double getThreshold();
+	double getGateLevel();
 	void setThreshold(double value);
 	void setGateLevel(double value);
 	SoundDetector * getSoundDetector();

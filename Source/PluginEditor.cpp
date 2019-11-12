@@ -27,7 +27,7 @@ ThreadCutterAudioProcessorEditor::ThreadCutterAudioProcessorEditor(ThreadCutterA
 	gateSlider.setRange(0.0, 1.0, 0.01);
 	gateSlider.setTextBoxStyle(Slider::NoTextBox, false, 90, 16);
 	gateSlider.setPopupDisplayEnabled(true, false, this);
-	gateSlider.setValue(p.getMainAudioProcessor()->getThreshold());
+	gateSlider.setValue(p.getMainAudioProcessor()->getGateLevel());
 	gateSlider.setTextValueSuffix("");
 	gateSlider.addListener(this);
 	addAndMakeVisible(&gateSlider);
